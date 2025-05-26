@@ -1,0 +1,32 @@
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import re
+
+# Separate error-code blocks from free-form documentation
+def error_code_chunker(docs):
+    error_chunks = []
+    generic_chunks = []
+    error_pattern = re.compile(r'TMVS\d{5}E')
+
+    for doc in docs:
+        if error_pattern.search(doc.page_content):
+            # Document contains TMVS error codes
+            blocks = re.findall(r'(TMVS\d{5}E[\s\S]+?)(?=TMVS\d{5}E|\Z)', doc.page_content, re.MULTILINE)
+            for block in blocks:
+                error_chunks.append(Document(
+                    page_content=block.strip(),
+                    metadata=doc.metadata
+                ))
+        else:
+            # Regular document – split normally
+            generic_chunks.append(doc)
+
+    return error_chunks, generic_chunks
+
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+error_chunks, generic_docs = error_code_chunker(docs)
+generic_chunks = text_splitter.split_documents(generic_docs)
+
+# Merge both sets of chunks
+chunks = error_chunks + generic_chunks
