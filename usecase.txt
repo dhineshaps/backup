@@ -1,0 +1,67 @@
+🔧 1. CPU Usage (Spikes, TSO users, STCs)
+Use RMF (Resource Measurement Facility) or SMF records (like SMF70, SMF72).
+
+Real-time CPU stats can be accessed via:
+
+RMF Monitor III
+
+z/OSMF APIs
+
+RMF Postprocessor reports
+
+You can extract:
+
+CPU busy %
+
+LPAR utilization
+
+Job name using CPU
+
+SRM classification
+
+🔍 2. Job-level Metrics (Batch Jobs, STCs)
+Job run time
+
+Step execution time
+
+CPU time per step (from JES2 log or SMF 30 records)
+
+Wait vs active time
+
+📈 3. System-wide Indicators
+Paging rate / memory pressure
+
+DASD I/O rates
+
+WLM Service class delays
+
+ENQ contention
+
+Operator log messages
+
+🔁 4. Syslog / Console Messages
+Use SDSF log, OPERLOG, or message exit
+
+Collect messages indicating errors, threshold breaches, abnormal terminations
+
+📊 5. SMF Data (Standard for Analysis)
+The most powerful source:
+
+SMF 70: CPU usage per processor
+
+SMF 72: WLM service class performance
+
+SMF 30: Job activity, CPU used, memory
+
+SMF 88/89: Application usage tagging
+
+Can be parsed via IBM Z Anomaly Analytics or a custom parser
+
+✅ Example: What to Feed AI
+Metric	Sample Value	Use
+timestamp	2025-05-28T13:45:00Z	Time of spike
+job_id	JOB12345	Track issue source
+cpu_percent	92.3	Detect spike
+step_name	DB2LOAD	Isolate heavy step
+user_id	XYZ123	Tie to TSO session
+msg_id	IEF450I	Track abends
