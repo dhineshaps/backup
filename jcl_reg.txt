@@ -1,0 +1,9 @@
+import re
+
+text = "JCLS: [jcl1,jcl2,jcl3]"
+match = re.search(r'jcls\s*:\s*\[([^\]]+)\]', text, re.IGNORECASE)
+
+if match:
+    jcls_str = match.group(1)  # 'jcl1,jcl2,jcl3'
+    jcls_list = [jcl.strip() for jcl in jcls_str.split(',')]
+    print(jcls_list)
