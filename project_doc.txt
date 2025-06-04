@@ -69,3 +69,53 @@ Sends GET to http://localhost:8000/job/TS65154A
 If found, reads TS65154A.log
 
 Sends log to OpenAI with:
+
+
+
+
+
+RAG Integration for JCL Analysis & Correction
+🔍 Purpose
+The RAG module enhances the chatbot's ability to:
+
+Understand JCL parameters, abends, and syntax
+
+Cross-reference job errors with internal documentation
+
+Suggest context-aware fixes for JCL issues
+
+This is especially useful when the job log includes unclear errors or when parameters like SPACE, DSN, DISP, etc., are incorrectly used.
+
+
+
+Job fails ➜ Job log analyzed via LLM
+        ⬇
+If error seems related to JCL content
+        ⬇
+Relevant internal docs fetched using FAISS retriever
+        ⬇
+Context + user prompt sent to OpenAI
+        ⬇
+LLM returns fix explanation + updated JCL sample
+
+
+
+Searches FAISS vector store with keywords: SB37, SPACE, DD1
+
+Retrieves internal doc explaining SPACE parameter misuse
+
+Sends prompt + context to LLM
+
+Returns:
+
+Explanation of B37
+
+Corrected SPACE parameter suggestion
+
+Updated JCL snippet
+
+"the job failed due to an SB37 (B37-04) abend, indicating a space allocation issue.
+
+Your SPACE=(TRK,(100,20)) may be insufficient.
+
+Try increasing it or using SPACE=(CYL,(200,50))."
