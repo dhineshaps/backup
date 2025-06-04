@@ -1,0 +1,71 @@
+This project is an interactive chatbot built using OpenAI API and LangChain, integrated with a FastAPI-based FTP job server to analyze and assist with Mainframe JCL job failures.
+
+It supports:
+
+Job Log Analysis via prompt like job: TS65154A
+
+Automatic log fetching through FastAPI
+
+LLM-based failure explanation and suggestions
+
+Manual fix and job resubmission
+
+Tracking multiple job completions
+
+
+User ➜ Streamlit UI ➜ LangChain Chatbot
+                ⬇
+     Checks if "job: JOBID" in prompt
+                ⬇
+     ➜ Calls FastAPI FTP Job Server
+         ⬇
+    Downloads job log file (e.g., TS65154A.log)
+                ⬇
+  ➜ Sends log to LLM (OpenAI via LangChain)
+         ⬇
+Returns explanation + fix steps to user
+
+Components Used
+🧠 Language Model
+OpenAI GPT-3.5 Turbo
+
+LangChain ChatOpenAI wrapper for streaming and prompt chaining
+
+📦 Vector Store (Optional for RAG)
+FAISS for document retrieval if prompt is not job-related
+
+📤 Job Log Fetcher
+FastAPI + FTP-based server exposes /job/{job_id} endpoint
+
+Returns status and writes logs to local disk (./logs/{job_id}.log)
+
+🖥️ Frontend
+Streamlit interactive UI
+
+Real-time assistant chat experience
+
+🧰 Libraries Used
+langchain
+
+openai
+
+streamlit
+
+requests
+
+faiss-cpu
+
+dotenv
+
+re, os, time
+
+
+Input: job: TS65154A
+
+Regex extracts TS65154A
+
+Sends GET to http://localhost:8000/job/TS65154A
+
+If found, reads TS65154A.log
+
+Sends log to OpenAI with:
