@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'BITBUCKET_PAYLOAD', value: '$'],
+            ],
+            causeString: 'Triggered by Bitbucket Push',
+            token: 'bitbucket_dispatcher_token',  // must match Bitbucket webhook token
+            printContributedVariables: true,
+            printPostContent: true
+        )
+    }
+
+    stages {
+        stage('Parse Bitbucket Payload') {
+            steps {
+                script {
+                    // Parse Bitbucket webhook JSON payload
+                    def payload = readJSON text: BITBUCKET_PAYLOAD
+
+                    // Collect all changed file paths
+                    def changedFiles = []
+                    payload.push.changes.each { change ->
+                        change.commits.each { commit ->
+                            commit.files.each { file ->
+                                changedFiles << file.path
+                            }
+                        }
+                    }
+
+                    echo "Changed files: ${changedFiles}"
+
+                    // Identify which module/folder changed
+                    env.BUILD_APP1 = changedFiles.any { it.startsWith('app1/') } ? 'true' : 'false'
+                    env.BUILD_APP2 = changedFiles.any { it.startsWith('app2/') } ? 'true' : 'false'
+                }
+            }
+        }
+
+        stage('Trigger Specific Builds') {
+            steps {
+                script {
+                    if (env.BUILD_APP1 == 'true') {
+                        echo "Changes detected in app1/, triggering App1 job..."
+                        build job: 'App1-Build', wait: false
+                    }
+
+                    if (env.BUILD_APP2 == 'true') {
+                        echo "Changes detected in app2/, triggering App2 job..."
+                        build job: 'App2-Build', wait: false
+                    }
+
+                    if (env.BUILD_APP1 != 'true' && env.BUILD_APP2 != 'true') {
+                        echo "No relevant folder changes detected. Skipping downstream builds."
+                    }
+                }
+            }
+        }
+    }
+}
