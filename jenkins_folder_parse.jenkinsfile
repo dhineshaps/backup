@@ -39,6 +39,18 @@ pipeline {
             }
         }
 
+stage('Workspace Sizes') {
+            steps {
+                powershell '''
+                Get-ChildItem 'C:\\Jenkins\\Workspace' -Directory | 
+                ForEach-Object {
+                    $size = (Get-ChildItem $_.FullName -Recurse | Measure-Object -Property Length -Sum).Sum
+                    Write-Output ("{0} : {1} MB" -f $_.Name, [math]::Round($size/1MB,2))
+                }
+                '''
+            }
+        }
+
         stage('Trigger Specific Builds') {
             steps {
                 script {
