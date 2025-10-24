@@ -39,6 +39,21 @@ pipeline {
             }
         }
 
+stage('Enter dynamic model folder') {
+    steps {
+        script {
+            // Find first folder inside tstream
+            def subDir = bat(script: 'for /d %%i in ("tstream\\*") do @echo %%~nxi', returnStdout: true).trim()
+            echo "Found subfolder: ${subDir}"
+
+            // Use Jenkins dir() to switch context
+            dir("tstream/${subDir}") {
+                bat 'dir'
+            }
+        }
+    }
+}
+
 stage('Workspace Sizes') {
             steps {
                 powershell '''
