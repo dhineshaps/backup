@@ -140,3 +140,13 @@ pipeline {
         }
     }
 }
+
+echo open %HOST%> ftp_commands.txt
+                echo user %USER% %PASS%>> ftp_commands.txt
+                echo ascii>> ftp_commands.txt
+                echo cd %PDS%>> ftp_commands.txt
+                echo put %FILE% %MEMBER%>> ftp_commands.txt
+                echo quit>> ftp_commands.txt
+
+                ftp -n -s:ftp_commands.txt
+                del ftp_commands.txt
