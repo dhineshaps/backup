@@ -150,3 +150,35 @@ echo open %HOST%> ftp_commands.txt
 
                 ftp -n -s:ftp_commands.txt
                 del ftp_commands.txt
+
+
+
+
+stage('Create TAR Archive') {
+    steps {
+        powershell '''
+        Write-Host "📦 Creating TAR from Build directory..."
+
+        $tarFile = "build.tar"
+        $sourceDir = "Build"
+
+        if (-Not (Test-Path $sourceDir)) {
+            Write-Error "❌ Source directory '$sourceDir' not found!"
+            exit 1
+        }
+
+        if (Test-Path $tarFile) {
+            Remove-Item $tarFile -Force
+        }
+
+        tar -cvf $tarFile -C $sourceDir .
+
+        if (Test-Path $tarFile) {
+            Write-Host "✅ TAR archive created successfully: $tarFile"
+        } else {
+            Write-Error "❌ TAR creation failed!"
+            exit 1
+        }
+        '''
+    }
+}
