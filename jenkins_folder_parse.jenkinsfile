@@ -94,3 +94,49 @@ Get-ChildItem 'C:\' -Directory | ForEach-Object {
         }
     }
 }
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    stages {
+
+        stage('Create JCL File') {
+            steps {
+                // create a simple test JCL dynamically
+                writeFile file: 'test.jcl', text: '''//MYJOB   JOB (ACCT),'TEST JOB',CLASS=A,MSGCLASS=X
+//STEP1   EXEC PGM=IEFBR14
+'''
+                echo "✅ JCL file created: test.jcl"
+            }
+        }
+
+        stage('Upload JCL to z/OS PDS') {
+            steps {
+                script {
+                    // The connection name must be defined under:
+                    // Manage Jenkins → Configure System → z/OS Connections
+                    zosmf("my-zos-connection") {
+                        writeFileToMember(
+                            dsn: "USER.TEST.JCL",
+                            member: "TESTJOB",
+                            file: "test.jcl",
+                            replace: true
+                        )
+                    }
+                }
+            }
+        }
+
+        stage('Delete Local File') {
+            steps {
+                sh 'rm -f test.jcl'
+                echo "🗑️ Deleted local test.jcl after upload"
+            }
+        }
+    }
+}
