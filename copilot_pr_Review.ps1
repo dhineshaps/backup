@@ -1,13 +1,20 @@
 param(
-    [string]$DiffFile = "pr.diff"
+    [string]$PR_ID
 )
 
-Write-Host "Starting AI PR Review..."
+Write-Host "Fetching PR diff..."
 
-if (!(Test-Path $DiffFile)) {
-    Write-Host "Diff file not found: $DiffFile"
+# Call Python to fetch diff
+python get_pr_diff.py $PR_ID
+
+$diffFile = "pr.diff"
+
+if (!(Test-Path $diffFile)) {
+    Write-Host "Diff file not found"
     exit 1
 }
+
+Write-Host "Splitting diff by files..."
 
 $tempDir = "temp_review_files"
 
@@ -17,9 +24,9 @@ if (Test-Path $tempDir) {
 
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 
-$diffContent = Get-Content $DiffFile -Raw
+$diffContent = Get-Content $diffFile -Raw
 
-# Split diff by file
+# Split diff per file
 $files = $diffContent -split "diff --git"
 
 $fileCounter = 0
@@ -31,30 +38,29 @@ foreach ($file in $files) {
 
     $fileCounter++
 
-    $fileName = "file_$fileCounter.diff"
-    $tempFile = Join-Path $tempDir $fileName
+    $filePath = "$tempDir\file_$fileCounter.diff"
 
-    $file | Out-File $tempFile -Encoding utf8
+    $file | Out-File $filePath -Encoding utf8
 
-    Write-Host "Reviewing $fileName ..."
+    Write-Host "Reviewing file $fileCounter..."
 
-    $prompt = "You are a senior code reviewer. Review this git diff and list only serious issues like logic bugs, security risks, null pointer issues, performance problems, or missing error handling. Ignore formatting issues."
+    $prompt = "You are a senior code reviewer. Review this git diff and report only serious issues like logic bugs, security issues, null pointer risks, missing error handling, or performance problems."
 
-    $review = cmd /c "copilot -p `"$prompt`" < $tempFile"
+    $review = cmd /c "copilot -p `"$prompt`" < $filePath"
 
-    $results += "### Review for $fileName"
+    $results += "### Review for file_$fileCounter"
     $results += $review
     $results += "`n--------------------------------`n"
 }
 
-$finalReport = "ai_review_report.md"
+$reportFile = "ai_review_report.md"
 
-Write-Host "Generating final report..."
+Write-Host "Generating review report..."
 
 $header = @"
 # AI Code Review Report
 
-Generated using GitHub Copilot CLI
+Pull Request: $PR_ID
 
 Total Files Reviewed: $fileCounter
 
@@ -62,13 +68,12 @@ Total Files Reviewed: $fileCounter
 
 "@
 
-$header | Out-File $finalReport -Encoding utf8
-
-$results | Out-File $finalReport -Append -Encoding utf8
+$header | Out-File $reportFile -Encoding utf8
+$results | Out-File $reportFile -Append -Encoding utf8
 
 Write-Host "Review completed."
 
-Write-Host "Report saved as: $finalReport"
+Write-Host "Report saved as $reportFile"
 
 # Cleanup
 Remove-Item $tempDir -Recurse -Force
