@@ -1,21 +1,31 @@
 #!/bin/bash
 
-OLD_DIR=$1
-NEW_DIR=$2
-PATCH_DIR=patch
+OLD_TAR=$1
+NEW_TAR=$2
 
-if [ -z "$OLD_DIR" ] || [ -z "$NEW_DIR" ]; then
-    echo "Usage: $0 <old_release_dir> <new_release_dir>"
+if [ -z "$OLD_TAR" ] || [ -z "$NEW_TAR" ]; then
+    echo "Usage: $0 old_version.tar new_version.tar"
     exit 1
 fi
 
-echo "Cleaning old patch directory..."
-rm -rf $PATCH_DIR
+WORKDIR=$(mktemp -d)
+
+OLD_DIR=$WORKDIR/old
+NEW_DIR=$WORKDIR/new
+PATCH_DIR=$WORKDIR/patch
+
+mkdir $OLD_DIR $NEW_DIR $PATCH_DIR
+
+echo "Extracting tar files..."
+
+tar -xf $OLD_TAR -C $OLD_DIR
+tar -xf $NEW_TAR -C $NEW_DIR
+
+echo "Finding changed files..."
+
+rsync -rcn --out-format="%n" $OLD_DIR/ $NEW_DIR/ > $WORKDIR/changed_files.txt
+
 mkdir -p $PATCH_DIR/files
-
-echo "Finding changed and new files..."
-
-rsync -rcn --out-format="%n" $OLD_DIR/ $NEW_DIR/ > /tmp/changed_files.txt
 
 while read file
 do
@@ -23,19 +33,19 @@ do
         mkdir -p "$PATCH_DIR/files/$(dirname $file)"
         cp "$NEW_DIR/$file" "$PATCH_DIR/files/$file"
     fi
-done < /tmp/changed_files.txt
+done < $WORKDIR/changed_files.txt
 
 echo "Finding deleted files..."
 
 cd $OLD_DIR
-find . -type f | sed 's|^\./||' | sort > /tmp/old_files.txt
-cd - > /dev/null
+find . -type f | sed 's|^\./||' | sort > $WORKDIR/old_files.txt
+cd - >/dev/null
 
 cd $NEW_DIR
-find . -type f | sed 's|^\./||' | sort > /tmp/new_files.txt
-cd - > /dev/null
+find . -type f | sed 's|^\./||' | sort > $WORKDIR/new_files.txt
+cd - >/dev/null
 
-comm -23 /tmp/old_files.txt /tmp/new_files.txt > $PATCH_DIR/delete_list.txt
+comm -23 $WORKDIR/old_files.txt $WORKDIR/new_files.txt > $PATCH_DIR/delete_list.txt
 
 echo "Creating install script..."
 
@@ -44,7 +54,7 @@ cat <<EOF > $PATCH_DIR/install_patch.sh
 
 INSTALL_DIR=\${1:-.}
 
-echo "Deleting removed files..."
+echo "Removing deleted files..."
 
 if [ -f delete_list.txt ]; then
     while read file
@@ -53,7 +63,7 @@ if [ -f delete_list.txt ]; then
     done < delete_list.txt
 fi
 
-echo "Applying patch..."
+echo "Applying patch files..."
 
 tar -xf patch_files.tar -C "\$INSTALL_DIR"
 
@@ -68,6 +78,11 @@ cd $PATCH_DIR
 tar -cf patch_files.tar files
 rm -rf files
 tar -cf patch.tar patch_files.tar delete_list.txt install_patch.sh
-cd ..
+cd - >/dev/null
 
-echo "Patch created: $PATCH_DIR/patch.tar"
+mv $PATCH_DIR/patch.tar .
+
+echo "Patch created: patch.tar"
+
+echo "Cleaning temporary files..."
+rm -rf $WORKDIR
