@@ -72,15 +72,23 @@ EOF
 
 chmod +x $PATCH_DIR/install_patch.sh
 
-echo "Packaging patch..."
+cho "Packaging patch..."
+
+if [ -d "$PATCH_DIR/files" ] && [ "$(ls -A $PATCH_DIR/files)" ]; then
+    tar -cf $PATCH_DIR/patch_files.tar -C $PATCH_DIR/files .
+else
+    tar -cf $PATCH_DIR/patch_files.tar --files-from /dev/null
+fi
+
+rm -rf $PATCH_DIR/files
 
 cd $PATCH_DIR
-tar -cf patch_files.tar files
-rm -rf files
 tar -cf patch.tar patch_files.tar delete_list.txt install_patch.sh
 cd - >/dev/null
 
-mv $PATCH_DIR/patch.tar .
+cp $PATCH_DIR/patch.tar "$OLDPWD"
+
+echo "Patch created: $OLDPWD/patch.tar"
 
 echo "Patch created: patch.tar"
 
