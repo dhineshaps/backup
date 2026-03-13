@@ -37,6 +37,32 @@ def get_pr_diff(pr_id):
 # CLEAN AND OPTIMIZE DIFF
 # -------------------------
 
+# def extract_changes(diff_text):
+
+#     clean_changes = []
+#     current_file = None
+#     line_count = 0
+
+#     for line in diff_text.splitlines():
+
+#         if line.startswith("diff --git"):
+#             parts = line.split(" ")
+#             current_file = parts[2].replace("a/", "")
+#             clean_changes.append(f"\nFILE: {current_file}")
+#             line_count = 0
+#             continue
+
+#         if line.startswith("+++") or line.startswith("---"):
+#             continue
+
+#         if line.startswith("+") or line.startswith("-"):
+
+#             if line_count < MAX_LINES_PER_FILE:
+#                 clean_changes.append(line)
+#                 line_count += 1
+
+#     return "\n".join(clean_changes)
+
 def extract_changes(diff_text):
 
     clean_changes = []
@@ -52,6 +78,10 @@ def extract_changes(diff_text):
             line_count = 0
             continue
 
+        if line.startswith("@@"):
+            clean_changes.append(line)
+            continue
+
         if line.startswith("+++") or line.startswith("---"):
             continue
 
@@ -62,7 +92,6 @@ def extract_changes(diff_text):
                 line_count += 1
 
     return "\n".join(clean_changes)
-
 
 # -------------------------
 # RUN COPILOT REVIEW
