@@ -117,3 +117,24 @@ if __name__ == "__main__":
 
     print("\nParsed Result:\n")
     print(result)
+
+def extract_step(lines, index: int):
+    # 1. Try to find step from IEF142I (most reliable)
+    for i in range(max(0, index - 10), min(len(lines), index + 10)):
+        match = re.search(r'IEF142I\s+\S+\s+(\S+)', lines[i])
+        if match:
+            return match.group(1)
+
+    # 2. Try ABEND format
+    for i in range(max(0, index - 10), min(len(lines), index + 10)):
+        match = re.search(r'IEF450I\s+\S+\s+(\S+)', lines[i])
+        if match:
+            return match.group(1)
+
+    # 3. Fallback: find word before RC or FLUSHED
+    for i in range(max(0, index - 5), min(len(lines), index + 5)):
+        match = re.search(r'(\S+)\s+(?:RC=|FLUSHED)', lines[i])
+        if match:
+            return match.group(1)
+
+    return None
